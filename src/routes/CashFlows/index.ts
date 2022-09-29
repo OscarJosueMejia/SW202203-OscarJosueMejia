@@ -4,8 +4,13 @@ import { Router } from "express";
 const router = Router();
 const cashFlowInstance = new CashFlow();
 
-router.get('/', (_req, res) => {
-    res.json(cashFlowInstance.getAllCashFlow());
+router.get('/', async (_req, res) => {
+    try {
+        res.json(await cashFlowInstance.getAllCashFlow());
+    } catch (error) {
+        console.log("-- Error: ", error);
+        res.status(503).json({error: (error as Error).message});
+    }
 });
 
 router.get('/byIndex/:index', (req, res) => {

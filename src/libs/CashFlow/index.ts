@@ -1,3 +1,5 @@
+import { getConnection } from "@server/dao/models/sqlite/SqliteConn";
+import { CashFlowDao } from "@server/dao/models/sqlite/CashFlowDao";
 /* Estructura de datos inicial */
 export interface ICashFlow {
     type: 'INCOME' | 'EXPENSE';
@@ -8,14 +10,26 @@ export interface ICashFlow {
 
 /* Manejo en memoria de un objeto */
 export class CashFlow {
+    private dao: CashFlowDao;
+
+    public constructor() {
+        getConnection()
+        .then(conn => {
+            this.dao = new CashFlowDao(conn);
+        })
+        .catch(ex=>console.error(ex));
+    }
+
     private cashFlowItems: ICashFlow[] = [];
 
     /* Consultas */
     /**
      * getAllCashFlow
     */
-    public getAllCashFlow(): ICashFlow[] {
-        return this.cashFlowItems;
+    public getAllCashFlow() {
+        // return this.cashFlowItems;
+
+        return this.dao.getCashFlows;
     }
 
     public getCashFlowByIndex(index:number): ICashFlow {

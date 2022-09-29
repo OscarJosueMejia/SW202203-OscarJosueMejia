@@ -13,22 +13,20 @@ export abstract class AbstractDao<T> implements IDaoObject {
         }
     }
 
-    public findAll() : Promise<T[]>{
-        throw new Error("Not Implemented");
+    public async findAll() : Promise<T[]>{
+        const sqlStr = `SELECT * from ${this.persistanceName};`;
+        const datos = await this.connection.all(sqlStr);
+        return datos;
     };
 
-    public findByID() : Promise<T>{
-        throw new Error("Not Implemented");
-    };
-
+    public async findByID(identifier: Partial<T>) : Promise<T>{
+        const {columns, values, params:_params} = this.getColValParmArr(identifier);
         
-    private getColValParmArr(data: Partial<T>): {columns:string[], values:unknown[], params:string[]} {
-        const columns = Object.keys(data);
-        const values = Object.values(data);
-        const params = columns.map(()=>'?');
+        const sqlSelect = `SELECT * from ${this.persistanceName} where ${columns.map(object=>`${object}=?`).join(' and ')}`;
+        const dato = await this.connection.get(sqlSelect, values);
 
-        return {columns, values, params};
-    }
+        return dato;
+    };
 
     public async createOne(data: T): Promise<T> {
         const {columns, values, params} = this.getColValParmArr(data);
@@ -52,13 +50,14 @@ export abstract class AbstractDao<T> implements IDaoObject {
         return true;
     };
 
+
     public async delete(identifier: Partial<T>): Promise<boolean>{
+        const {columns, values, params:_params} = this.getColValParmArr(identifier);
+        
+        const sqlDelete = `DELETE FROM ${this.persistanceName} 
+        WHERE ${columns.map(object=>`${object}=?`).join(' and ')};`;
 
-        const {columns:columnsId, values:_valuesId, params:_paramsId} = this.getColValParmArr(identifier);
-        const sqlDelete = `DELETE FROM ${this.persistanceName} WHERE ${columnsId.map((object)=>`${object}=?`).join(' ')};`;
-
-        await this.connection.exec(sqlDelete);
-
+        await this.connection.exec(sqlDelete, values);
         return true;
     };
 
@@ -69,4 +68,18 @@ export abstract class AbstractDao<T> implements IDaoObject {
     public aggregate(){
         throw new Error("Not Implemented");
     };
+
+    public exec(sqlstr: string){
+        return this.connection.exec(sqlstr);
+    };
+
+    /* UTILS  */
+    private getColValParmArr(data: Partial<T>): {columns:string[], values:unknown[], params:string[]} {
+        const columns = Object.keys(data);
+        const values = Object.values(data);
+        const params = columns.map(()=>'?');
+
+        return {columns, values, params};
+    }
 }
+
