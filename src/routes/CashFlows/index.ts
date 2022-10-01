@@ -1,5 +1,6 @@
 import {Router} from 'express';
 import { ICashFlow, CashFlow } from '@libs/CashFlow';
+import { commonValidator, validateInput } from '@server/utils/validator';
 
 const router = Router();
 const cashFlowInstance = new CashFlow();
@@ -30,6 +31,23 @@ router.post('/new', async (req, res)=>{
   } catch (error) {
     res.status(500).json({error: (error as Error).message});
   }
+});
+
+
+router.post('/testvalidator', async (req, res)=>{
+    const {email} = req.body;
+
+    const validateEmailSchema = commonValidator.email;
+    validateEmailSchema.param = "email";
+    validateEmailSchema.required = true;
+    validateEmailSchema.customValidate = (values) => {return values.includes('unicah.edu');}
+    
+    const errors = validateInput({email}, [validateEmailSchema]);
+
+    if (errors.length > 0) {
+      return res.status(400).json(errors);
+    }
+    return res.json({email});
 });
 
 router.put('/update/:index', (req, res)=>{

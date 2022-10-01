@@ -3,5 +3,5 @@ export interface ICashFlow {
     date: Date;
     amount: number;
     description: String;
-    _id?: unknown;
+    _id?: unknown; //? -> Indica que el campo es opcional
 }
