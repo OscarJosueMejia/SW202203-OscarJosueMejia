@@ -17,8 +17,16 @@ export abstract class AbstractDao<T> implements IDaoObject {
     const datos = await this.connection.all(sqlStr);
     return datos;
   }
+
   public async findByID(identifier: Partial<T>): Promise<T>{
     const {columns, values, params:_params} = this.getColValParmArr(identifier);
+    const sqlSelect = `SELECT * from ${this.persistanceName} where ${columns.map(o=>`${o}=?`).join(' and ')};`;
+    const dato = await this.connection.get(sqlSelect, values);
+    return dato;
+  }
+
+  public async findByUserName(userName: Partial<T>): Promise<T>{
+    const {columns, values, params:_params} = this.getColValParmArr(userName);
     const sqlSelect = `SELECT * from ${this.persistanceName} where ${columns.map(o=>`${o}=?`).join(' and ')};`;
     const dato = await this.connection.get(sqlSelect, values);
     return dato;

@@ -23,6 +23,7 @@ router.get('/byindex/:index', async (req, res) => {
     res.status(500).json({'msg': 'Error al obtener Registro'});
   }
 });
+
 router.post('/new', async (req, res)=>{
   try {
     const newCashFlow = req.body as unknown as ICashFlow;
