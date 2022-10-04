@@ -16,6 +16,10 @@ export class UserData {
         return this.dao.getUsersData();
     }
 
+    public loginUser(userData: Partial <IUserData>){
+        return this.dao.loginUser(userData);
+    }
+
     public getUserDataById(index : number){
         return this.dao.getUserDataById({_id:index});
     }
@@ -30,6 +34,10 @@ export class UserData {
 
     public updateUserData(index: number, userData: IUserData){
         return this.dao.updateUserData(index, userData);
+    }
+
+    public disableUserData(index: number){
+        return this.dao.disableUserData({_id:index});
     }
 
 

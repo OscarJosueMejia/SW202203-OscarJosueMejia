@@ -46,6 +46,28 @@ export class UserDataDao extends AbstractDao<IUserData> {
         }
     }
 
+    public async loginUser(userData: Partial<IUserData>){
+        try {
+            const {username, password} = userData;
+            
+            const findUserData = await super.findByUserName({username});
+
+            if (!findUserData) {
+                return false;
+              }else{
+                if ( bcrypt.compareSync(password, findUserData.password) ) {
+                  console.log('PASSWORDS MATCH - PROCEED WITH LOGIN');
+                  return true;
+                }else{
+                    return false;
+                }
+              }
+        } catch (ex: unknown) {
+            console.log("UserDataDao sqlite: ", (ex as Error).message);
+            throw ex;
+        }
+    }
+
     public async insertNewUserData(newUserData : IUserData){
         try {
             const {password, ...otherData} = newUserData;
@@ -59,14 +81,30 @@ export class UserDataDao extends AbstractDao<IUserData> {
         }
     }
 
+    public async disableUserData(disableUserData: Partial<IUserData>){
+        try {
+            const {_id} = disableUserData;
+
+            return await super.update({_id}, {currentStatus:'INA'});   
+
+        } catch (ex: unknown) {
+            console.log("UserDataDao sqlite: ", (ex as Error).message);
+            throw ex;
+        }
+    }
+
     public async updateUserData(identifier: number, updateUserData : IUserData){
         try {
             const {password, ...updateObject} = updateUserData;
-            const defaultSettings = {password: await bcrypt.hash(password, 10)};
+            
+            /* Check if password was sent */
+            if (!password) {
+                return await super.update({_id:identifier}, updateObject);   
+            }else{
+                const passwordSalty =  {password: await bcrypt.hash(password, 10)};
+                return await super.update({_id:identifier}, {...updateObject, ...passwordSalty});   
+            }
 
-            const result = await super.update({_id:identifier}, {...updateObject, ...defaultSettings});
-
-            return result;
         } catch (ex: unknown) {
             console.log("UserDataDao sqlite: ", (ex as Error).message);
             throw ex;

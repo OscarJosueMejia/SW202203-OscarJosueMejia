@@ -5,7 +5,6 @@ import { commonValidator, validateInput } from '@server/utils/validator';
 
 const router = Router();
 const userDataInstance = new UserData();
-const bcrypt = require('bcrypt');
 
 router.get('/',async (_req, res) => {
     try {
@@ -50,6 +49,12 @@ router.put('/update/:id', async (req, res)=>{
       const { id } = req.params;
       const userDataFromForm = req.body as IUserData;
       const {email, password, username} = userDataFromForm;
+      
+      Object.keys(userDataFromForm).forEach(key =>{
+        if(userDataFromForm[key] === "" || userDataFromForm[key] === null){
+          delete userDataFromForm[key];
+        }
+      });
 
       const isValid = ValidateNewValues(email, password, username, 'UPD');
       if (isValid.length === 0) {
@@ -66,22 +71,30 @@ router.put('/update/:id', async (req, res)=>{
     }
   });
 
+  router.put('/disable/:id', async (req, res)=>{
+    try {
+      const { id } = req.params;
+      
+      if (await userDataInstance.disableUserData(+id)) {
+        res.status(200).json({"msg":"Usuario Inhabilitado"});
+      } else {
+        res.status(404).json({"msg":"Update not posible"});
+      }
+
+    } catch(error) {
+      res.status(500).json({error: (error as Error).message});
+    }
+  });
+
   router.get('/login', async (req, res)=>{
     try {
-      const userDataFromForm = req.body as IUserData;
+      const loginDataFromForm = req.body as IUserData;
+      const isValid = await userDataInstance.loginUser(loginDataFromForm);
 
-      //MOVER ESTO A LIBS O AL DAO
-      const findUserData = await userDataInstance.getUserDataByUserName(userDataFromForm.username);
-
-      if (!findUserData) {
+      if (!isValid) {
         res.status(500).json({error: 'Check your Credentials'});   
       }else{
-        if ( bcrypt.compareSync(userDataFromForm.password, findUserData.password) ) {
-          console.log('PASSWORDS MATCH - PROCEED WITH LOGIN');
-          res.json(findUserData);
-        }else{
-          res.status(500).json({error: 'Check your Credentials'});
-        }
+        res.status(200).json({msg:"Welcome!", validLog: true});
       }
     } catch(error) {
       res.status(500).json({error: (error as Error).message});
