@@ -21,7 +21,7 @@ export class UserData {
     }
 
     public getUserDataByUserName(identifier : string){
-        return this.dao.findByUserName({userName:identifier});
+        return this.dao.findByUserName({username:identifier});
     }
 
     public addUserData(userData: IUserData){

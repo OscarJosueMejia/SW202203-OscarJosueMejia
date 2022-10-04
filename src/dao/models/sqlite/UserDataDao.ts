@@ -11,8 +11,10 @@ export class UserDataDao extends AbstractDao<IUserData> {
 
         super.exec('CREATE TABLE IF NOT EXISTS USERDATA ('
         + ' _id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,'
-        + ' userName TEXT,'
+        + ' firstName TEXT,'
+        + ' lastName TEXT,'
         + ' email TEXT,'
+        + ' username TEXT,'
         + ' password TEXT,'
         + ' currentStatus TEXT,'
         + ' createdAt TEXT);').then().catch(e=>console.error(e));
@@ -33,9 +35,9 @@ export class UserDataDao extends AbstractDao<IUserData> {
         }
     }
 
-    public async getUserDataByUserName(userName : string){
+    public async getUserDataByUserName(username : string){
         try {
-            const result = await super.findByUserName({userName:userName});
+            const result = await super.findByUserName({username:username});
             return result;
 
         } catch (ex: unknown) {

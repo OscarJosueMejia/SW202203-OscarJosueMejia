@@ -59,10 +59,24 @@ export const validateInput = (objectToValidate: any, validationSchema: IValidati
 
 export const commonValidator: {[key:string]: IValidationSchemaItem} = {
     email: {
-        param: '',
+        param: 'email',
         type:'string',
         error:'Formato de Correo Incorrecto',
         required: false,
         regex: /^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$/  
+    },
+    password: {
+        param: 'password',
+        type:'string',
+        error:'Password must contain 1 number (0-9), 1 uppercase letter, 1 lowercase letter,  1 non-alpha numeric number, Password Length: 8-16 char.',
+        required: false,
+        regex: /^(?=.*\d)(?=.*[A-Z])(?=.*[a-z])(?=.*[^\w\d\s:])([^\s]){8,16}$/  
+    },
+    username: {
+        param: 'username',
+        type:'string',
+        error:'Wrong Username format. non-alpha numeric not allowed, Length: 6-12 char. ',
+        required: false,
+        regex: /^(?=[a-zA-Z0-9._]{6,12}$)(?!.*[_.]{2})[^_.].*[^_.]$/ 
     }
 }

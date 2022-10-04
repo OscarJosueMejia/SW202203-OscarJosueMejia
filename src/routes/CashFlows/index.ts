@@ -39,6 +39,7 @@ router.post('/testvalidator', async (req, res)=>{
     const {email} = req.body;
 
     const validateEmailSchema = commonValidator.email;
+    
     validateEmailSchema.param = "email";
     validateEmailSchema.required = true;
     validateEmailSchema.customValidate = (values) => {return values.includes('unicah.edu');}

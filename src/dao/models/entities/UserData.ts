@@ -1,7 +1,9 @@
 export interface IUserData {
-    userName: string;
-    email: String;
-    password: String;
+    firstName: string,
+    lastName: string,
+    email: string;
+    username: string;
+    password: string;
     currentStatus: 'ACT' | 'INA' | 'BLQ';
     createdAt: Date;
     _id?: unknown; //? -> Indica que el campo es opcional
