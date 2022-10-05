@@ -15,6 +15,16 @@ router.get('/',async (_req, res) => {
     }
 });
 
+router.get('/byindex/:index', async (req, res) => {
+  try {
+    const { index } = req.params;
+    res.json(await userDataInstance.getUserDataById(+index));
+  } catch (error) {
+    console.log("Error", error);
+    res.status(500).json({'msg': 'Error al obtener Registro'});
+  }
+});
+
 router.get('/byusername/:username', async (req, res) => {
   try {
     const { username } = req.params;
@@ -71,35 +81,35 @@ router.put('/update/:id', async (req, res)=>{
     }
   });
 
-  router.put('/disable/:id', async (req, res)=>{
-    try {
-      const { id } = req.params;
-      
-      if (await userDataInstance.disableUserData(+id)) {
-        res.status(200).json({"msg":"Usuario Inhabilitado"});
-      } else {
-        res.status(404).json({"msg":"Update not posible"});
-      }
-
-    } catch(error) {
-      res.status(500).json({error: (error as Error).message});
+router.put('/disable/:id', async (req, res)=>{
+  try {
+    const { id } = req.params;
+    
+    if (await userDataInstance.disableUserData(+id)) {
+      res.status(200).json({"msg":"Usuario Inhabilitado"});
+    } else {
+      res.status(404).json({"msg":"Update not posible"});
     }
-  });
 
-  router.get('/login', async (req, res)=>{
-    try {
-      const loginDataFromForm = req.body as IUserData;
-      const isValid = await userDataInstance.loginUser(loginDataFromForm);
+  } catch(error) {
+    res.status(500).json({error: (error as Error).message});
+  }
+});
 
-      if (!isValid) {
-        res.status(500).json({error: 'Check your Credentials'});   
-      }else{
-        res.status(200).json({msg:"Welcome!", validLog: true});
-      }
-    } catch(error) {
-      res.status(500).json({error: (error as Error).message});
+router.get('/login', async (req, res)=>{
+  try {
+    const loginDataFromForm = req.body as IUserData;
+    const isValid = await userDataInstance.loginUser(loginDataFromForm);
+
+    if (!isValid) {
+      res.status(500).json({error: 'Check your Credentials'});   
+    }else{
+      res.status(200).json({msg:"Welcome!", validLog: true});
     }
-  });
+  } catch(error) {
+    res.status(500).json({error: (error as Error).message});
+  }
+});
 
 
   function ValidateNewValues (email:string, password:string, username:string, mode: 'UPD' | 'INS') {
