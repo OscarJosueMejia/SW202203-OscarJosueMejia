@@ -55,8 +55,8 @@ export class UserDataDao extends AbstractDao<IUserData> {
             if (!findUserData) {
                 return false;
               }else{
-                if ( bcrypt.compareSync(password, findUserData.password) ) {
-                  console.log('PASSWORDS MATCH - PROCEED WITH LOGIN');
+
+                if ( bcrypt.compareSync(password, findUserData.password) && findUserData.currentStatus === 'ACT' )  {
                   return true;
                 }else{
                     return false;
@@ -73,8 +73,15 @@ export class UserDataDao extends AbstractDao<IUserData> {
             const {password, ...otherData} = newUserData;
             const defaultSettings = {password: await bcrypt.hash(password, 10)};
 
-            const result = await super.createOne({...otherData, ...defaultSettings});
-            return result;
+            const findExistentUsername = await super.findByUserName({username:newUserData.username});
+            if (!findExistentUsername) {
+                const result = await super.createOne({...otherData, ...defaultSettings});
+                return result;
+            }else{
+                console.error("Error: USERNAME ALREADY REGISTERED");
+                return false;
+            }
+
         } catch (ex: unknown) {
             console.log("UserDataDao sqlite: ", (ex as Error).message);
             throw ex;
@@ -84,6 +91,12 @@ export class UserDataDao extends AbstractDao<IUserData> {
     public async disableUserData(disableUserData: Partial<IUserData>){
         try {
             const {_id} = disableUserData;
+
+            const findUserById = await super.findByID({_id});
+
+            if (!findUserById) {
+                return false;
+            }
 
             return await super.update({_id}, {currentStatus:'INA'});   
 
@@ -97,6 +110,12 @@ export class UserDataDao extends AbstractDao<IUserData> {
         try {
             const {password, ...updateObject} = updateUserData;
             
+            const findUserById = await super.findByID({_id:identifier});
+
+            if (!findUserById) {
+                return false;
+            }
+
             /* Check if password was sent */
             if (!password) {
                 return await super.update({_id:identifier}, updateObject);   

@@ -78,5 +78,6 @@ export const commonValidator: {[key:string]: IValidationSchemaItem} = {
         error:'Wrong Username format. non-alpha numeric not allowed, Length: 6-12 char. ',
         required: false,
         regex: /^(?=[a-zA-Z0-9._]{6,12}$)(?!.*[_.]{2})[^_.].*[^_.]$/ 
-    }
+    },
+
 }
