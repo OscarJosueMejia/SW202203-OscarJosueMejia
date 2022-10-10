@@ -108,6 +108,7 @@ export class UserDataDao extends AbstractDao<IUserData> {
 
     public async updateUserData(updateUserData : IUserData){
         try {
+            //id now comes from object
             const {_id, password, ...updateObject} = updateUserData;
             
             const findUserById = await super.findByID({_id});
