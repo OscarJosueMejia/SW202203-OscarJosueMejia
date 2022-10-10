@@ -106,11 +106,11 @@ export class UserDataDao extends AbstractDao<IUserData> {
         }
     }
 
-    public async updateUserData(identifier: number, updateUserData : IUserData){
+    public async updateUserData(updateUserData : IUserData){
         try {
-            const {password, ...updateObject} = updateUserData;
+            const {_id, password, ...updateObject} = updateUserData;
             
-            const findUserById = await super.findByID({_id:identifier});
+            const findUserById = await super.findByID({_id});
 
             if (!findUserById) {
                 return false;
@@ -118,10 +118,10 @@ export class UserDataDao extends AbstractDao<IUserData> {
 
             /* Check if password was sent */
             if (!password) {
-                return await super.update({_id:identifier}, updateObject);   
+                return await super.update({_id}, updateObject);   
             }else{
                 const passwordSalty =  {password: await bcrypt.hash(password, 10)};
-                return await super.update({_id:identifier}, {...updateObject, ...passwordSalty});   
+                return await super.update({_id}, {...updateObject, ...passwordSalty});   
             }
 
         } catch (ex: unknown) {

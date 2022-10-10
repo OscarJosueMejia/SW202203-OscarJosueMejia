@@ -33,7 +33,7 @@ export class UserData {
     }
 
     public updateUserData(index: number, userData: IUserData){
-        return this.dao.updateUserData(index, userData);
+        return this.dao.updateUserData({...{_id:index}, ...userData});
     }
 
     public disableUserData(index: number){
