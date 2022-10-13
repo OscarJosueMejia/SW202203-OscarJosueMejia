@@ -44,4 +44,10 @@ export class CashFlow {
       return (this.dao as CashFlowSqLiteDao).deleteCashFlow({_id:index as number});
     }
   }
+
+  public getCountCashFlow(){
+    return (this.dao instanceof CashFlowMongoDbDao) 
+    ? (this.dao as CashFlowMongoDbDao).getCountCashFlow() 
+    : Promise.resolve(-1);
+  }
 }
