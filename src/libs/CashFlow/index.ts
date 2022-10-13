@@ -1,5 +1,7 @@
-import { getConnection } from "@models/sqlite/SqliteConn";
-import { CashFlowDao } from "@models/sqlite/CashFlowDao";
+import { getConnection as getSQLiteConn } from "@models/sqlite/SqliteConn";
+import { getConnection as getMongoDBConn } from "@models/mongodb/MongoDBConn";
+import { CashFlowDao as CashFlowSqLiteDao } from "@models/sqlite/CashFlowDao";
+import { CashFlowDao as CashFlowMongoDbDao } from "@models/mongodb/CashFlowDao";
 export interface ICashFlow {
   type: 'INCOME' | 'EXPENSE';
   date: Date;
@@ -7,36 +9,39 @@ export interface ICashFlow {
   description: string;
 };
 export class CashFlow {
-  private dao: CashFlowDao;
-  public constructor(){
+  private dao: CashFlowSqLiteDao|CashFlowMongoDbDao;
+  public constructor(typeConn: "SQLITE"|"MONGODB"){
+    const getConnection = typeConn === "SQLITE" ? getSQLiteConn : getMongoDBConn;
+    const CashFlowDao =  typeConn === "SQLITE" ? CashFlowSqLiteDao : CashFlowMongoDbDao;
     getConnection()
       .then(conn=>{
         this.dao = new CashFlowDao(conn);
       })
       .catch(ex=>console.error(ex));
   }
-  private cashFlowItems : ICashFlow[] = [];
   // Consultas
   public getAllCashFlow() {
     return this.dao.getClashFlows()
-    // return this.cashFlowItems; // select * from cashflow;
   }
-  public getCashFlowByIndex( index:number) {
-      return this.dao.getClashFlowById({_id:index});
-      //return this.cashFlowItems[index];
+  public getCashFlowByIndex( index:number|string) {
+      if (typeof index === "string") {
+        return (this.dao as CashFlowMongoDbDao).getClashFlowById(index as string);
+      } else {
+        return (this.dao as CashFlowSqLiteDao).getClashFlowById({_id:index as number});
+      }
   }
 
   public addCashFlow( cashFlow:ICashFlow) {
     return this.dao.insertNewCashFlow(cashFlow);
   }
-  public updateCashFlow( index:number, cashFlow:ICashFlow): boolean {
-    if (index >= 0 && index < this.cashFlowItems.length) {
-      this.cashFlowItems[index] = cashFlow;
-      return true;
-    }
-    return false;
+  public updateCashFlow( index:number|string, cashFlow:ICashFlow){
+      return (this.dao as CashFlowMongoDbDao).updateCashFlow({...cashFlow, _id:index});
   }
-  public deleteCashFlow( index:number) {
-    return this.dao.deleteCashFlow({_id:index});
+  public deleteCashFlow( index:number|string) {
+    if (typeof index === "string") {
+      return (this.dao as CashFlowMongoDbDao).deleteCashFlow({_id: index as string});
+    } else {
+      return (this.dao as CashFlowSqLiteDao).deleteCashFlow({_id:index as number});
+    }
   }
 }
