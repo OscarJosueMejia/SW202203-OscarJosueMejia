@@ -4,6 +4,31 @@
 // The current database to use.
 use('sw202203');
 
-// Search for documents in the current collection.
-db.cashflow.countDocuments();
 
+// /* Custom filter using or */
+
+// let filter = {$or:[
+//     {amount: {$lte:500}},
+//     {amount: {$gte:2000}},
+//     ]}
+
+// db.cashflow.find(filter);
+
+/*  */
+// const id_collections = [ObjectId('6351e851b5f58a1fe6f5bad0'),ObjectId('6351e862b5f58a1fe6f5bad1')];
+// let filter2 = {_id:{$in: id_collections}}
+// db.cashflow.find(filter2);
+
+
+
+/* ---------------------- FECHAAAAAAAAAS ---------------------- */
+const a  = new Date(2022, 9, 24 , 0, 0, 0, 0)
+const b  = new Date(2022, 9, 31 , 23, 59, 59, 999)
+
+//Las fechas SIEMPRE SIEMPREE SE COMPARAN EN HORA ZULU
+//Se deben guardar en zulu y en el frontend se muestra segun el dispositivo.
+const filter3 = {
+    date: {$gte:a, $lte:b}
+}
+
+db.cashflow.find(filter3);
