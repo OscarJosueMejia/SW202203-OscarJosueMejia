@@ -1,7 +1,8 @@
 import { getConnection } from "@models/mongodb/MongoDBConn";
 import { UsersDao  } from "@models/mongodb/UsersDao";
 import { getPassword, checkPassword } from "@utils/crypto";
-import { sign } from '@utils/jwt';
+import { sign, signOptions, verify } from '@utils/jwt';
+import { generateRandomNumber } from "@utils/otherUtils";
 
 export class Users {
   private dao: UsersDao;
@@ -12,6 +13,11 @@ export class Users {
       })
       .catch(ex=>console.error(ex));
   }
+
+  public getAllUsers(){
+    return this.dao.getAllUsers();
+  }
+
   public signin(name: string, email:string, password: string){
     const newUser = {
       name,
@@ -31,7 +37,7 @@ export class Users {
     try {
         const user = await this.dao.getUserByEmail(email);
         if(!!!user){
-            console.log("LOGIN: USER NOT FOUND", `${user.email}`)     
+            console.log("LOGIN: USER NOT FOUND", `${email}`)     
              throw new Error("LOGIN USER NOT FOUND");
         }
 
@@ -47,9 +53,113 @@ export class Users {
         const {name, email:emailUser, avatar, _id} = user;
         const returnUser = {name, email:emailUser, avatar, _id};
         return {...returnUser, token: sign(returnUser)}
+
     } catch (error) {
         console.log("LOGIN: ", error);
         throw error;
     }
+  }
+
+  public async changePassword(email, oldPassword, newPassword){
+    const user = await this.dao.getUserByEmail(email);
+
+    if(!!!user){
+      console.log("Password Change: USER NOT FOUND", `${email}`)     
+       throw new Error("Password Change USER NOT FOUND");
+    }
+    if (!this.checkOldPassword(user.oldPasswords, newPassword)) {
+      console.log("Password Change: New password was previously used.", `${user.email}`)     
+      throw new Error("New password was previously used.");
+    }
+    if (!checkPassword(oldPassword, user.password)) {
+      console.log("Password Change: Current passwords does not match.", `${user.email}`)     
+      throw new Error("Current passwords does not match.");
+    }
+    if (oldPassword === newPassword) {
+      console.log("Password Change: Current Password must not be the same as New Password.", `${user.email}`)     
+      throw new Error("Current Password must not be the same as New Password.");
+    }
+
+    const { _id, password } = user;
+    let {oldPasswords} = user;
+
+    oldPasswords.push(password);
+
+    return this.dao.updateUser({_id, password:getPassword(newPassword), oldPasswords});
+
+  }
+
+  public async generateRecoveryCode(email){
+    const user = await this.dao.getUserByEmail(email);
+    if(!!!user){
+        console.log("ACCOUNT RECOVERY: USER NOT FOUND", `${email}`)     
+         throw new Error("ACCOUNT RECOVERY USER NOT FOUND");
+    }
+    if (user.status !== "ACT") {
+      console.log("ACCOUNT RECOVERY: STATUS NOT ACTIVE", `${user.email} - ${user.status}`)     
+       throw new Error("ACCOUNT RECOVERY STATUS INVALID");
+    }
+    const {email:emailUser, _id} = user;
+    const recoveryPin = generateRandomNumber();
+    const returnUser = {email:emailUser, _id, pin:recoveryPin};
+
+    try {
+      await this.dao.updateUser({passwordChangeToken:signOptions(returnUser, {expiresIn:'15m'}), _id})
+    } catch (error) {
+      console.log("Error when saving recovery token");
+    }
+
+    return {returnUser}
+  }
+
+  public async verifyRecoveryData(email:string, pin:string, newPassword:string){
+    const user = await this.dao.getUserByEmail(email);
+
+    if(!!!user){
+      console.log("ACCOUNT RECOVERY: USER NOT FOUND", `${email}`)     
+       throw new Error("ACCOUNT RECOVERY USER NOT FOUND");
+    }
+    if (!!!user.passwordChangeToken) {
+      console.log("ACCOUNT RECOVERY: NO TOKEN FOUND", `${user.email}`)     
+      throw new Error("ACCOUNT RECOVERY NO TOKEN FOUND");
+    }
+
+    if (!this.checkOldPassword(user.oldPasswords, newPassword)) {
+      console.log("Password Change: New password was previously used.", `${user.email}`)     
+      throw new Error("New password was previously used.");
+    }
+    if (checkPassword(newPassword, user.password)) {
+      console.log("Password Change: Current Password must not be the same as New Password.", `${user.email}`)     
+      throw new Error("Current Password must not be the same as New Password.");
+    }
+
+
+    const {_id, passwordChangeToken} = user;
+    
+    try {
+      const decoded = verify(passwordChangeToken);
+      if (decoded['pin'] !== parseInt(pin)) {
+        throw new Error("INVALID RECOVERY PIN");
+      }
+
+      let {oldPasswords} = user;
+      oldPasswords.push(user.password);
+
+      await this.dao.deleteRecoveryToken({_id});
+      return await this.dao.updateUser({_id, password:getPassword(newPassword), oldPasswords})
+
+      
+  } catch (error) {
+      console.log("JWT-MIDDLEWARE: ", error)
+      throw new Error("Invalid Token");
+  }
+
+  }
+
+  public checkOldPassword(oldPasswords, newPassword:string){
+    let isIncluded = oldPasswords.filter(function(value){
+      return checkPassword(newPassword, value);
+    })
+    return isIncluded.length === 0;
   }
 }
