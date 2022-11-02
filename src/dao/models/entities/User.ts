@@ -8,5 +8,8 @@ export interface IUser {
     created: Date,
     updated: Date,
     avatar?: string,
+    failedAttempts?: number,
+    lastLogin?: Date,
+    roles:string[],
     _id?: unknown
   }

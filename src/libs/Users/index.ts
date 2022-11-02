@@ -4,6 +4,8 @@ import { getPassword, checkPassword } from "@utils/crypto";
 import { sign, signOptions, verify } from '@utils/jwt';
 import { generateRandomNumber } from "@utils/otherUtils";
 
+const availableRole = ['public', 'admin', 'auditor', 'support'];
+
 export class Users {
   private dao: UsersDao;
   public constructor(){
@@ -19,15 +21,19 @@ export class Users {
   }
 
   public signin(name: string, email:string, password: string){
+    const currentDate = new Date();
     const newUser = {
       name,
       email,
       password: getPassword(password),
       status: 'ACT',
       oldPasswords: [] as string[],
-      created: new Date(),
-      updated: new Date(),
+      created: currentDate,
+      updated: currentDate,
+      failedAttempts:0,
+      lastLogin: currentDate,
       avatar:'',
+      roles:['public'],
       _id: null
     };
     return this.dao.createUser(newUser);
@@ -37,27 +43,40 @@ export class Users {
     try {
         const user = await this.dao.getUserByEmail(email);
         if(!!!user){
-            console.log("LOGIN: USER NOT FOUND", `${email}`)     
+            console.log("LOGIN: USER NOT FOUND", `${email}`) 
              throw new Error("LOGIN USER NOT FOUND");
         }
 
         if (user.status !== "ACT") {
-           console.log("LOGIN: STATUS NOT ACTIVE", `${user.email} - ${user.status}`)     
+           console.log("LOGIN: STATUS NOT ACTIVE", `${user.email} - ${user.status}`)
+            await this.dao.updateUserFailed(user._id.toString());   
             throw new Error("LOGIN STATUS INVALID");
         }
         if (!checkPassword(password, user.password)) {
             console.log("LOGIN: INVALID PASSWORD", `${user.email} - ${user.status}`)     
+            await this.dao.updateUserFailed(user._id.toString());
             throw new Error("LOGIN INVALID PASSWORD");
         }
         //Generate jwt
         const {name, email:emailUser, avatar, _id} = user;
         const returnUser = {name, email:emailUser, avatar, _id};
+
+        await this.dao.updateLoginSuccess(_id.toString());
+
         return {...returnUser, token: sign(returnUser)}
 
     } catch (error) {
         console.log("LOGIN: ", error);
         throw error;
     }
+  }
+
+  public async assignRoles(id: string, role: string){
+    if (! availableRole.includes(role) ) {
+        throw new Error(`Role ${role} must be ${availableRole.join(', ')} ` )
+    }
+
+    return this.dao.addRoleToUser(id, role);
   }
 
   public async changePassword(email, oldPassword, newPassword){

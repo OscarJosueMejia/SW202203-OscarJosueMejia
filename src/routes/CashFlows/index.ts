@@ -1,13 +1,14 @@
-import {Router} from 'express';
+import { Router} from 'express';
 import { ICashFlow, CashFlow } from '@libs/CashFlow';
 import { commonValidator, validateInput } from '@server/utils/validator';
-
+import { WithUserRequest } from '@routes/index';
 const router = Router();
-const cashFlowInstance = new CashFlow("MONGODB");
+const cashFlowInstance = new CashFlow();
 
-router.get('/', async (_req, res)=>{
+router.get('/', async (req: WithUserRequest, res)=>{
   try {
-    res.json(await cashFlowInstance.getAllCashFlow());
+    console.log("CASHFLOW", req.user);
+    res.json(await cashFlowInstance.getAllCashFlowFromUser(req.user?._id));
   } catch (ex) {
     console.error(ex);
     res.status(503).json({error:ex});
@@ -16,7 +17,7 @@ router.get('/', async (_req, res)=>{
 
 router.get('/count', async (_req, res)=>{
   try {
-    res.json({"count":await cashFlowInstance.getCountCashFlow()});
+    res.json({"count": await cashFlowInstance.getCountCashflow()});
   } catch (ex) {
     console.error(ex);
     res.status(503).json({error:ex});
@@ -25,8 +26,7 @@ router.get('/count', async (_req, res)=>{
 
 router.get('/byindex/:index', async (req, res) => {
   try {
-    const { index } = req.params;
-    const id = (/^\d*$/.test(index))?+index:index;
+    const { index : id } = req.params;
     res.json(await cashFlowInstance.getCashFlowByIndex(id));
   } catch (error) {
     console.log("Error", error);
@@ -36,6 +36,7 @@ router.get('/byindex/:index', async (req, res) => {
 
 router.post('/testvalidator', async (req, res)=>{
   const { email } = req.body;
+  
   const validateEmailSchema = commonValidator.email;
   validateEmailSchema.param="email";
   validateEmailSchema.required =true;
@@ -47,12 +48,13 @@ router.post('/testvalidator', async (req, res)=>{
   return res.json({email});
 });
 
-router.post('/new', async (req, res)=>{
+router.post('/new', async (req: WithUserRequest, res)=>{
   try {
+    const {_id: userId } = req.user;
     const newCashFlow = req.body as unknown as ICashFlow;
     //VALIDATE
 
-    const newCashFlowIndex = await cashFlowInstance.addCashFlow(newCashFlow);
+    const newCashFlowIndex = await cashFlowInstance.addCashFlow(newCashFlow, userId);
     res.json({newIndex: newCashFlowIndex});
   } catch (error) {
     res.status(500).json({error: (error as Error).message});
@@ -73,8 +75,7 @@ router.put('/update/:index', async (req, res)=>{
 
 router.delete('/delete/:index', (req, res)=>{
   try {
-    const { index } = req.params;
-    const id = (/^\d*$/.test(index))?+index:index;
+    const { index : id } = req.params;
     if (cashFlowInstance.deleteCashFlow(id)) {
       res.status(200).json({"msg": "Registro Eliminado"});
     } else {
